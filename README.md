@@ -12,6 +12,11 @@ other side. Every vector has:
    that scans IMAP/.eml dumps for the artifacts gateway-relayed SMS leaves
    behind.
 
+For the **full kill chain** — MITRE ATT&CK mapping, a sanitized worked
+example, vector comparison against Twilio / SS7 / iMessage, threat-actor
+attribution, and defender leverage points per stage — see
+[`attack_chain.md`](attack_chain.md).
+
 Headline vector: **sender spoofing via domain-aligned From: headers on
 carriers that surface the local-part of the email address as the SMS
 sender**. AT&T was the canonical target for years but **retired their
@@ -63,6 +68,10 @@ No external dependencies — Python 3.10+ stdlib only (`smtplib`, `email`,
 - [`carrier_gateway_study.md`](carrier_gateway_study.md) — the top-level
   reference: how the gateways work, why they exist, recon, spoofing,
   defender view, why the vector is consolidating.
+- [`attack_chain.md`](attack_chain.md) — full kill chain. Where this
+  vector sits in the broader smishing landscape, MITRE ATT&CK
+  mapping per stage, sanitized worked example, vector comparison,
+  threat actor attribution, defender leverage points.
 - [`attack_vectors/`](attack_vectors/) — one short markdown per vector
   for quick lookup or linking from issues / PRs:
   - `01_gateway_discovery.md`
@@ -96,6 +105,22 @@ message will render on the handset.
 | `pocs/99_detect_gateway_msg.py`     | Defender side. Scans a tree of `.eml` / mbox for the headers, hops, and structural tells of a gateway-relayed SMS. |
 
 ---
+
+## Where this fits in the broader smishing landscape
+
+This is **one entry point** into mobile phishing kill chains. The full
+walkthrough — including the MITRE mapping, threat-actor attribution,
+and the seven-stage breakdown from recon to account takeover — lives in
+[`attack_chain.md`](attack_chain.md). A short summary:
+
+- **MITRE ATT&CK coverage**: T1598, T1583.001, T1583.004, T1660,
+  T1566.003, T1204.001, T1056.003, T1539, T1078.001.
+- **Why operators still pick this path in 2026**: no KYC, no
+  10DLC fees, lookalike sender names, better attribution-deniability
+  than Twilio.
+- **The only control that defeats the chain**: phishing-resistant MFA
+  (FIDO2 / hardware tokens). SMS OTP and TOTP both fall to Evilginx2-
+  style real-time MFA relay.
 
 ## Why this matters in 2026
 
