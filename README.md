@@ -14,8 +14,13 @@ other side. Every vector has:
 
 Headline vector: **sender spoofing via domain-aligned From: headers on
 carriers that surface the local-part of the email address as the SMS
-sender**. AT&T was the canonical target for years; Verizon killed their
-gateway in 2022; T-Mobile still works in 2026 with stricter filtering.
+sender**. AT&T was the canonical target for years but **retired their
+gateway entirely by 2026** (zone exists, zero MX records). The three
+big surviving gateways — T-Mobile's `tmomail.net`, Verizon's
+`vtext.com`, and Verizon's `vzwpix.com` — are all now fronted by
+**Proofpoint Cloudmark** (`*.cloudfilter.net`). Empirical 2026-05-23
+recon in [`samples/recon_2026-05-23.md`](samples/recon_2026-05-23.md)
+documents the current state.
 
 ---
 
@@ -57,7 +62,7 @@ No external dependencies — Python 3.10+ stdlib only (`smtplib`, `email`,
 
 - [`carrier_gateway_study.md`](carrier_gateway_study.md) — the top-level
   reference: how the gateways work, why they exist, recon, spoofing,
-  defender view, why the vector is dying.
+  defender view, why the vector is consolidating.
 - [`attack_vectors/`](attack_vectors/) — one short markdown per vector
   for quick lookup or linking from issues / PRs:
   - `01_gateway_discovery.md`
@@ -65,6 +70,9 @@ No external dependencies — Python 3.10+ stdlib only (`smtplib`, `email`,
   - `03_direct_to_mx.md`
   - `04_mms_vs_sms_gateway.md`
   - `05_defender_artifacts.md`
+- [`samples/recon_2026-05-23.md`](samples/recon_2026-05-23.md) — raw
+  DoH + dig evidence behind the 2026 inventory. Reproduction commands
+  inline. Refreshed any time the inventory changes.
 
 ### Operator tools (red-team / authorized testing)
 
@@ -98,20 +106,32 @@ free paging channel for sysadmins. Red teams discovered fast that:
 - The sender rendering on the handset is partially attacker-controlled.
 - The message arrives as a native SMS, not a "from unknown app" warning.
 
-The defensive side has caught up unevenly:
+The defensive side has consolidated since 2022 (rewritten 2026-05-23
+against empirical recon):
 
-- **Verizon** killed `vtext.com` outright in 2022 after sustained abuse.
-- **AT&T** now enforces SPF/DKIM/DMARC on inbound to `txt.att.net` and
-  filters lookalike domains aggressively.
-- **T-Mobile**, **US Cellular**, and several MVNOs still run the legacy
-  bridges with looser filtering. T-Mobile's `tmomail.net` is the most
-  commonly active gateway in 2026.
+- **AT&T retired their gateway entirely.** `txt.att.net` and
+  `mms.att.net` zones exist but publish zero MX records. No mail is
+  accepted. Cricket (AT&T MVNO) followed and now resolves to an Akamai
+  web redirect.
+- **Verizon did not kill `vtext.com`** despite the widely-cited 2022
+  shutdown claim. The zone still publishes MX records pointing at
+  Proofpoint Cloudmark. What was killed was permissive delivery — the
+  bridge persists for authenticated, properly-aligned business senders.
+- **T-Mobile, Verizon SMS, and Verizon MMS all sit behind Proofpoint
+  Cloudmark** (`*.cloudfilter.net`). The carriers outsourced anti-spam
+  to a single commercial vendor. Consumer-mail sources (Gmail, Yahoo,
+  Outlook) are silently dropped at the Proofpoint layer in 2026.
+- **US Cellular kept their own infrastructure** (`mx.uscc.net`) and is
+  the least-filtered surviving gateway.
 - **Google Fi** requires strict SPF/DKIM pass — hard target for spoofing.
 
-The realistic abuse pattern in 2026 is **low-volume spear-phishing against
-employees of companies whose owned domains lack DMARC `p=reject`**, on
-T-Mobile or AT&T lines, using a typosquat of the employer's domain. Spray
-and pray is dead — carrier RBLs and CAN-SPAM enforcement closed it.
+The realistic abuse pattern in 2026 is **low-volume spear-phishing
+against employees of companies whose owned domains lack DMARC
+`p=reject`**, sent from a fully authenticated typosquat domain on a
+non-residential IP, delivered **direct-to-MX** (not via consumer SMTP)
+to a T-Mobile, Verizon, or US Cellular target. Spray and pray is dead —
+Proofpoint reputation feeds, carrier RBLs, and CAN-SPAM enforcement
+closed it.
 
 ---
 

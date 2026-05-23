@@ -29,30 +29,42 @@ class Gateway:
 
 
 GATEWAYS: tuple[Gateway, ...] = (
-    Gateway("att",          "txt.att.net",            "mms.att.net",            "active",
-            "Strict DMARC enforcement post-2024. Local-part of From: surfaces as sender."),
+    Gateway("att",          None,                     None,                     "dead",
+            "Gateway retired. As of 2026-05-23 DoH shows txt.att.net and "
+            "mms.att.net publish SOA but zero MX records. AT&T removed the "
+            "MX records rather than kill the zones."),
     Gateway("tmobile",      "tmomail.net",            "tmomail.net",            "active",
-            "Moderate filtering. Full From: shown. Soft target in 2026."),
-    Gateway("verizon",      None,                     "vzwpix.com",             "mms-only",
-            "SMS gateway vtext.com killed in 2022. MMS gateway remains, flaky."),
+            "MX behind Proofpoint Cloudmark (*.cloudfilter.net). Accepts "
+            "domain-aligned authenticated senders; silently drops consumer-mail "
+            "sources (Gmail/Yahoo/etc.)."),
+    Gateway("verizon",      "vtext.com",              "vzwpix.com",             "active",
+            "Both vtext.com (SMS) and vzwpix.com (MMS) have live MX behind "
+            "Proofpoint Cloudmark. Earlier reports of vtext.com being killed "
+            "in 2022 are inaccurate per 2026-05-23 recon; what was killed "
+            "was open delivery, not the zone."),
     Gateway("uscellular",   "email.uscc.net",         "mms.uscc.net",           "active",
-            "Weak filtering. Local-part surfaces as sender."),
+            "Own infrastructure (av*/sc*.mx.uscc.net), not Proofpoint. "
+            "Filtering posture less characterized in 2026."),
     Gateway("googlefi",     "msg.fi.google.com",      "msg.fi.google.com",      "active",
-            "Strict SPF/DKIM. Hard target for spoofing."),
-    Gateway("cricket",      "sms.cricketwireless.net","mms.cricketwireless.net","active",
-            "AT&T MVNO. Inherits AT&T filtering."),
+            "Google's own MX (gmr-smtp-in.l.google.com). Strict SPF/DKIM."),
+    Gateway("cricket",      None,                     None,                     "dead",
+            "sms.cricketwireless.net is now a CNAME to Akamai edge "
+            "(redirects-cricketwireless.edgekey.net). No mail server. "
+            "Confirmed dead 2026-05-23."),
     Gateway("boost",        "tmomail.net",            "tmomail.net",            "active",
-            "T-Mobile MVNO since 2020. Same gateway."),
+            "T-Mobile MVNO since 2020. Same Proofpoint-fronted gateway."),
     Gateway("metro",        "tmomail.net",            "tmomail.net",            "active",
-            "T-Mobile MVNO. Same gateway."),
+            "T-Mobile MVNO. Same Proofpoint-fronted gateway."),
     Gateway("mint",         "tmomail.net",            "tmomail.net",            "active",
-            "T-Mobile MVNO. Same gateway."),
-    Gateway("spectrum",     None,                     "vzwpix.com",             "mms-only",
-            "Verizon MVNO. Same vtext.com death."),
-    Gateway("xfinity",      None,                     "vzwpix.com",             "mms-only",
-            "Verizon MVNO. Same vtext.com death."),
+            "T-Mobile MVNO. Same Proofpoint-fronted gateway."),
+    Gateway("spectrum",     "vtext.com",              "vzwpix.com",             "active",
+            "Verizon MVNO. Inherits the Proofpoint-fronted gateways."),
+    Gateway("xfinity",      "vtext.com",              "vzwpix.com",             "active",
+            "Verizon MVNO. Inherits the Proofpoint-fronted gateways. "
+            "Empirical 2026-05-23 test: Gmail-originated mail to "
+            "vzwpix.com silently dropped."),
     Gateway("sprint",       None,                     None,                     "dead",
-            "Merged into T-Mobile. messaging.sprintpcs.com dead."),
+            "Merged into T-Mobile. messaging.sprintpcs.com publishes no MX."),
     Gateway("nextel",       None,                     None,                     "dead",
             "Brand discontinued. messaging.nextel.com dead."),
 )

@@ -41,11 +41,21 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tools"))
 import gateway_domains  # noqa: E402
 
 
-GATEWAY_DOMAINS = {
-    g.sms_domain for g in gateway_domains.GATEWAYS if g.sms_domain
-} | {
-    g.mms_domain for g in gateway_domains.GATEWAYS if g.mms_domain
+# Defender scans historical .eml. Include retired gateway domains too —
+# a 2024 phish that landed via txt.att.net is still forensically relevant
+# in 2026, even though AT&T retired the bridge.
+_HISTORICAL_GATEWAY_DOMAINS = {
+    "txt.att.net", "mms.att.net",                 # AT&T (retired by 2026)
+    "sms.cricketwireless.net",                    # Cricket (now Akamai redirect)
+    "mms.cricketwireless.net",
+    "messaging.sprintpcs.com",                    # Sprint (dead post-T-Mobile)
+    "pm.sprint.com", "messaging.nextel.com",
 }
+GATEWAY_DOMAINS = (
+    {g.sms_domain for g in gateway_domains.GATEWAYS if g.sms_domain}
+    | {g.mms_domain for g in gateway_domains.GATEWAYS if g.mms_domain}
+    | _HISTORICAL_GATEWAY_DOMAINS
+)
 
 # Hostname substrings that appear in carrier-MTA Received: hops.
 CARRIER_HOP_SUBSTRINGS = (

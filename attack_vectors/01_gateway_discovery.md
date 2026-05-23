@@ -27,19 +27,45 @@ opt-in check.
 
 ## 2026 status
 
-| Live | Dead / unreliable |
-|------|-------------------|
-| `txt.att.net`, `mms.att.net` | `vtext.com` (Verizon SMS, killed 2022) |
-| `tmomail.net` (T-Mobile + MVNOs) | `messaging.sprintpcs.com` (Sprint, dead after T-Mobile merger) |
-| `msg.fi.google.com` (Fi) | `messaging.nextel.com` (Nextel, dead) |
-| `email.uscc.net` (US Cellular) | `mobile.celloneusa.com` (legacy, dead) |
-| `sms.cricketwireless.net` | `myboostmobile.com` (dead since Boost moved to T-Mobile) |
+Updated 2026-05-23 against empirical DNS recon — see
+[`samples/recon_2026-05-23.md`](../samples/recon_2026-05-23.md) for raw
+DoH evidence.
+
+| Live (and how) | Dead / removed |
+|----------------|----------------|
+| `tmomail.net` — fronted by Proofpoint Cloudmark (`tmo-{east,west}.mx.a.cloudfilter.net`) | `txt.att.net` (zone exists, zero MX) |
+| `vtext.com` — Proofpoint Cloudmark (`vrz-sms.mx.a.cloudfilter.net`); NOT killed in 2022 as widely reported | `mms.att.net` (zone exists, zero MX) |
+| `vzwpix.com` — Proofpoint Cloudmark (`vrz-mms.mx.a.cloudfilter.net`) | `sms.cricketwireless.net` (CNAME to Akamai web edge) |
+| `email.uscc.net`, `mms.uscc.net` — US Cellular own infra (`av*/sc*.mx.uscc.net`), not Proofpoint | `messaging.sprintpcs.com` (Sprint, dead post-T-Mobile merger) |
+| `msg.fi.google.com` — Google MX (`gmr-smtp-in.l.google.com`) | `messaging.nextel.com` (Nextel, dead) |
+
+Three big things changed from the 2022 narrative:
+
+1. **AT&T and Cricket retired entirely.** Earlier drafts of this study
+   treated AT&T's `txt.att.net` as the canonical operator target. That
+   is wrong as of 2026 — both `txt.att.net` and `mms.att.net` publish
+   SOA but zero MX records. AT&T explicitly removed the mail records.
+   Cricket re-pointed their hostname to an Akamai edge redirect.
+
+2. **Verizon's `vtext.com` did not actually die.** The "Verizon killed
+   vtext in 2022" claim is everywhere in third-party documentation, but
+   the zone still publishes live MX records to Proofpoint's Cloudmark.
+   What was killed was permissive delivery, not the bridge.
+
+3. **The big three surviving gateways all use Proofpoint.** T-Mobile,
+   Verizon SMS, and Verizon MMS resolve to `*.cloudfilter.net`, which
+   is operated by Proofpoint (SOA → `ns1.proofpoint.com`). The carriers
+   no longer run their own anti-spam front-ends.
 
 ## Mitigation
 
-Operator side: keep your gateway list refreshed against test sends. A
-dead gateway in a fan-out wastes envelope budget and leaves email trails
-in dead MTAs (some of which now belong to spam researchers).
+Operator side: keep your gateway list refreshed against MX recon, not
+secondary sources. Several widely-cited writeups still list
+`txt.att.net` as the canonical target; sending there in 2026 is silent
+failure since the MX is gone. Build the gateway directory from `dig MX`
+or DoH lookups against `1.1.1.1`, not from blog posts.
 
 Defender side: this stage is silent — no observable signal until the
-operator sends real traffic.
+operator sends real traffic. The one defender-visible indicator at recon
+stage is brand monitoring: typosquat domain registrations precede a
+campaign by hours to days, visible in CT logs and passive DNS.

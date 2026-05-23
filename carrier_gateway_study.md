@@ -16,21 +16,38 @@ address has the form:
 <10-digit-MSISDN>@<carrier-gateway-domain>
 ```
 
-The gateway domain is just a DNS-resolvable host with an MX record:
+The gateway domain is just a DNS-resolvable host with an MX record.
+As of May 2026 the surviving major carrier gateways are all fronted by
+Proofpoint's Cloudmark service:
 
 ```
 $ dig +short MX tmomail.net
-10 mx.msg.t-mobile.com.
+10 tmo-east.mx.a.cloudfilter.net.
+10 tmo-west.mx.a.cloudfilter.net.
 
-$ dig +short MX txt.att.net
-5  alnpop41.snet.gateway.2wire.com.
-10 alnpop42.snet.gateway.2wire.com.
+$ dig +short MX vtext.com
+0  vrz-sms.mx.a.cloudfilter.net.
+10 smtpin01.vzw.a.cloudfilter.net.
+10 smtpin02.vzw.a.cloudfilter.net.
+
+$ dig +short MX vzwpix.com
+0  vrz-mms.mx.a.cloudfilter.net.
+10 smtpin01-mms.vzw.a.cloudfilter.net.
+10 smtpin02-mms.vzw.a.cloudfilter.net.
 ```
 
-A message sent to `2155551234@tmomail.net` is accepted by T-Mobile's MTA,
-stripped of MIME, truncated to SMS limits (~160 chars per segment),
-mapped to the subscriber's MSISDN, and injected into the carrier SMSC the
-same way any mobile-originated SMS would be.
+`cloudfilter.net` is operated by Proofpoint (SOA → `ns1.proofpoint.com`).
+This is post-2017 Proofpoint-acquired Cloudmark commercial filtering.
+The inbound MTA the sender sees is **Proofpoint, not the carrier**. Mail
+passing Proofpoint's checks is then handed to the carrier SMSC. Mail
+failing checks is silently dropped — no 5xx, no bounce.
+
+A message sent to `2155551234@tmomail.net` is accepted by Proofpoint's
+MTA, evaluated against Cloudmark's reputation and content rules, then
+either forwarded to T-Mobile's SMSC or silently dropped. If forwarded,
+T-Mobile strips MIME, truncates to SMS limits (~160 chars per segment),
+maps the local-part of the recipient to the subscriber's MSISDN, and
+injects into the SMSC the same way any mobile-originated SMS would be.
 
 The handset has no signal that the message originated from email. It
 looks like a normal SMS in the native Messages app.
@@ -44,22 +61,48 @@ that abuse will not scale." That assumption did not survive.
 
 ## 2. Gateway inventory (2026 status)
 
+This section was rewritten 2026-05-23 against empirical DNS recon — see
+[`samples/recon_2026-05-23.md`](samples/recon_2026-05-23.md) for the raw
+evidence. Earlier drafts of this study mirrored secondary sources that
+turned out to be stale.
+
 | Carrier        | SMS gateway              | MMS gateway              | Status (May 2026) |
 |----------------|--------------------------|--------------------------|-------------------|
-| AT&T           | `@txt.att.net`           | `@mms.att.net`           | Active, strict DMARC |
-| T-Mobile       | `@tmomail.net`           | `@tmomail.net`           | Active, moderate filtering |
-| Verizon        | `@vtext.com` (dead)      | `@vzwpix.com`            | SMS gateway dead 2022. MMS flaky. |
-| US Cellular    | `@email.uscc.net`        | `@mms.uscc.net`          | Active |
-| Google Fi      | `@msg.fi.google.com`     | (same)                   | Active, strict SPF/DKIM |
-| Cricket        | `@sms.cricketwireless.net` | `@mms.cricketwireless.net` | Active (AT&T MVNO, inherits AT&T filters) |
+| AT&T           | `@txt.att.net` (dead)    | `@mms.att.net` (dead)    | **Retired.** Zones exist, zero MX records. |
+| T-Mobile       | `@tmomail.net`           | `@tmomail.net`           | Alive, behind Proofpoint Cloudmark filter |
+| Verizon        | `@vtext.com`             | `@vzwpix.com`            | Alive, behind Proofpoint Cloudmark filter |
+| US Cellular    | `@email.uscc.net`        | `@mms.uscc.net`          | Alive, own infrastructure |
+| Google Fi      | `@msg.fi.google.com`     | (same)                   | Alive, Google MX, strict SPF/DKIM |
+| Cricket        | `@sms.cricketwireless.net` (dead) | `@mms.cricketwireless.net` (dead) | **Retired.** Now a CNAME to Akamai web edge |
 | Boost / Metro  | `@tmomail.net`           | (same)                   | T-Mobile MVNO |
 | Mint Mobile    | `@tmomail.net`           | (same)                   | T-Mobile MVNO |
-| Spectrum Mobile| `@vtext.com` (dead)      | `@vzwpix.com`            | Verizon MVNO, same death |
-| Xfinity Mobile | `@vtext.com` (dead)      | `@vzwpix.com`            | Verizon MVNO, same death |
+| Spectrum Mobile| `@vtext.com`             | `@vzwpix.com`            | Verizon MVNO |
+| Xfinity Mobile | `@vtext.com`             | `@vzwpix.com`            | Verizon MVNO |
+| Sprint         | (none)                   | (none)                   | Dead since T-Mobile merger |
 
-The Verizon shutdown in mid-2022 took out the largest single subscriber
-base. The remaining footprint is roughly T-Mobile + AT&T + MVNOs, which
-still covers a large fraction of the US mobile market.
+The 2026 picture is a consolidation story, not the simple "Verizon killed
+their gateway" narrative that circulated in 2022.
+
+- **AT&T and Cricket retired their gateways entirely.** Both zones still
+  resolve to SOA but publish zero MX records. AT&T explicitly removed
+  the mail records; Cricket re-pointed the hostname to an Akamai web
+  redirect.
+- **T-Mobile and Verizon outsourced anti-spam to Proofpoint Cloudmark.**
+  Three of the remaining major gateways — `tmomail.net`, `vtext.com`,
+  and `vzwpix.com` — all resolve to MX hosts under
+  `*.cloudfilter.net`, which is operated by Proofpoint (whose Cloudmark
+  acquisition closed in 2017). Carriers no longer run the front-end
+  themselves; they pay Proofpoint to filter.
+- **Verizon's `vtext.com` was not killed.** The widely-cited 2022
+  "Verizon shut down vtext.com" claim turns out to be inaccurate. The
+  zone still publishes MX. What was killed was permissive accept-and-
+  deliver behavior — anything that doesn't pass Proofpoint's checks is
+  silently dropped, which from the sender's perspective looks
+  indistinguishable from a dead gateway.
+- **US Cellular is the outlier.** Their `email.uscc.net` and
+  `mms.uscc.net` are still hosted on their own `mx.uscc.net`
+  infrastructure, not Proofpoint. Filtering posture is less
+  characterized in public sources.
 
 ---
 
@@ -104,14 +147,15 @@ from a real MSISDN. Each carrier has its own rule.
 
 Historical and current rendering:
 
-| Carrier        | Sender shown on handset                                    |
-|----------------|------------------------------------------------------------|
-| AT&T (`txt.att.net`)   | Display name + local-part of `From:`, e.g. `support` from `support@bankofamerica.com`. Strictest DMARC check today. |
-| T-Mobile (`tmomail.net`) | Full `From:` address, lightly truncated. Hard to spoof an identity, easy to spoof a "this came from email" alert. |
-| Google Fi      | Full `From:` address. SPF/DKIM pass required. |
-| US Cellular    | Local-part only, similar to AT&T. Weaker filtering. |
+| Carrier                  | Sender shown on handset                              |
+|--------------------------|------------------------------------------------------|
+| AT&T (historical, gateway retired in 2026) | Display name + local-part of `From:`, e.g. `support` from `support@bankofamerica.com`. Was the canonical operator target until the gateway was retired. |
+| T-Mobile (`tmomail.net`) | Full `From:` address, lightly truncated. Behind Proofpoint Cloudmark filtering. Hard to spoof an identity outright, easier to make look like an alert. |
+| Verizon (`vtext.com`, `vzwpix.com`) | Email sender shown above body on MMS. Proofpoint Cloudmark filters aggressively — consumer-mail sources silently dropped. |
+| Google Fi                | Full `From:` address. SPF/DKIM pass required. |
+| US Cellular              | Local-part only. Less-filtered survivor (own infrastructure, not Proofpoint). Likely the cleanest 2026 target for authorized testing on a target whose carrier you control. |
 
-The classic phishing flow on AT&T was:
+The classic phishing flow on AT&T used to be:
 
 1. Register a typosquat: `bank0famerica.com` or `secure-chase.net`.
 2. Stand up an SMTP server with SPF/DKIM/DMARC published for that domain.
@@ -119,6 +163,22 @@ The classic phishing flow on AT&T was:
    `@txt.att.net` address.
 4. Target's iPhone shows an SMS from "alerts", body
    "Your account has been locked. Tap to verify: <short-url>".
+
+That flow is dead. AT&T's gateway is gone. The equivalent flow against
+Proofpoint-filtered carriers (T-Mobile, Verizon) in 2026 looks like:
+
+1. Register a typosquat with **complete DNS authentication**: SPF,
+   DKIM with a published selector, DMARC `p=quarantine` or `p=reject`.
+2. Send from a **non-residential IP with clean rDNS** matching your
+   HELO hostname. Cloudmark's reputation feeds blackhole residential
+   ranges and brand-new VPS IPs aggressively.
+3. **Direct-to-MX**, not via consumer SMTP. Gmail, Yahoo, Outlook
+   consumer accounts cannot deliver to the Proofpoint-fronted gateways
+   — empirically confirmed 2026-05-23 against `vzwpix.com`. Cloudmark's
+   policy treats consumer-mail sources as untrusted and drops silently.
+4. The handset rendering remains attractive: short sender, no
+   "unknown number" warning, slots into Messages alongside legitimate
+   SMS.
 
 Why iPhone in particular? iOS renders SMS from email more compactly than
 Android — fewer "this came from a non-mobile sender" hints. iOS 17+
@@ -203,32 +263,60 @@ parses .eml / mbox dumps and flags gateway-relayed messages.
 
 ---
 
-## 7. Why the vector is dying
+## 7. Why the vector is dying — and where it isn't
 
-- **Verizon (2022)** killed `vtext.com` after years of bot abuse.
-- **AT&T (2023–2024)** rolled out strict DMARC and lookalike filtering
-  on `txt.att.net`. Pass rate for typosquat domains dropped from ~70%
-  to under 10%.
-- **Google Fi** has never tolerated unauthenticated senders.
-- **T-Mobile** remains the soft target but has added rate limits per
-  source IP.
+The "dying" framing is more nuanced than the 2022 narrative suggested.
+Updated 2026-05-23 against empirical recon.
+
+What actually happened:
+
+- **AT&T retired the gateway entirely** sometime between 2024 and 2026.
+  `txt.att.net` and `mms.att.net` zones exist but publish zero MX
+  records. No mail accepted at all.
+- **Cricket followed AT&T**. `sms.cricketwireless.net` is now a CNAME
+  to an Akamai web edge — the hostname redirects to a support page.
+- **Verizon did not kill `vtext.com`** despite the widely cited 2022
+  reports. The zone still publishes MX. What Verizon did was outsource
+  the inbound filtering to Proofpoint's Cloudmark service. The bridge
+  persists for authenticated business senders; consumer-source mail is
+  silently dropped, which from the sender's perspective is
+  indistinguishable from a dead gateway.
+- **T-Mobile sits on the same Proofpoint Cloudmark infrastructure.**
+  All three of the major surviving carrier gateways
+  (`tmomail.net`, `vtext.com`, `vzwpix.com`) now resolve under
+  `*.cloudfilter.net`.
+- **US Cellular kept their own infrastructure** and remains the least
+  filtered survivor.
+- **Google Fi** never tolerated unauthenticated senders to begin with.
 - **RCS Business Messaging** and **Twilio / Sinch / Bandwidth** A2P APIs
   are the legitimate replacement for the paging use case, with KYC and
-  number assignment. Carriers are pushing customers toward them and away
-  from the legacy bridges.
-- **CAN-SPAM and TCPA enforcement** has expanded to cover SMS, with
+  number assignment. Carriers push business customers toward them.
+- **CAN-SPAM and TCPA enforcement** expanded to cover SMS with
   per-message statutory damages ($500–$1,500). The economics now favor
   spear-phishing over volume.
 
 What this means for red teams in 2026:
 
-- The vector remains useful for **low-volume, high-targeting** scenarios:
-  one or two SMS to a specific employee, sender designed to read as
-  their own employer's IT or HR team.
-- It is dead for any spray-and-pray volume.
-- For pentests, the value is mostly in **demonstrating the spoofing
-  surface and recommending defensive controls** (DMARC `p=reject`,
-  end-user training, MDM that flags email-sourced SMS).
+- **The vector is not "dead". It has been consolidated** behind
+  Proofpoint Cloudmark on T-Mobile and Verizon, and behind US Cellular's
+  own MTAs. The shape of a working delivery has changed.
+- **Consumer-mail sources cannot deliver** to T-Mobile or Verizon
+  gateways. Gmail, Yahoo, Outlook accounts are silently dropped at the
+  Cloudmark layer. This is the empirical finding from the
+  2026-05-23 recon (`samples/recon_2026-05-23.md`).
+- **What still works**: a domain-aligned authenticated sender
+  (registered typosquat with full SPF / DKIM / DMARC) on a
+  non-residential IP with clean rDNS, delivering direct-to-MX. That
+  setup costs ~$15–30/mo in domain + VPS and still gets past Cloudmark
+  for low-volume sends.
+- **What works easiest**: US Cellular subscribers, because the gateway
+  is on the carrier's own infrastructure with lighter filtering than
+  Proofpoint's commercial offering.
+- For pentests, the value remains mostly in **demonstrating the spoofing
+  surface and recommending defensive controls** (DMARC `p=reject` on
+  owned and parked domains, end-user training on "sender is a word not
+  a number", MDM that flags email-sourced SMS, brand monitoring for
+  typosquat registrations).
 
 ---
 
