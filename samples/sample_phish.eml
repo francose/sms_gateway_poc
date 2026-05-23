@@ -1,0 +1,15 @@
+Return-Path: <alerts@bank0famerica.com>
+Received: from mta-out.attacker.tld (mta-out.attacker.tld [203.0.113.42])
+    by alnpop41.snet.gateway.2wire.com with ESMTP id abc123;
+    Wed, 14 May 2026 12:34:56 -0400
+Date: Wed, 14 May 2026 12:34:56 -0400
+From: alerts@bank0famerica.com
+To: 2155551234@txt.att.net
+Subject:
+Message-ID: <20260514-abc@bank0famerica.com>
+Content-Type: text/plain; charset=utf-8
+
+Your account has been locked due to unusual sign-in.
+Tap to verify your identity: https://bit.ly/3xyz9aB
+
+Bank of America

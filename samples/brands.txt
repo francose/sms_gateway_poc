@@ -1,0 +1,16 @@
+bankofamerica.com
+chase.com
+wellsfargo.com
+citi.com
+capitalone.com
+amex.com
+paypal.com
+venmo.com
+apple.com
+icloud.com
+microsoft.com
+amazon.com
+fedex.com
+ups.com
+usps.com
+dhl.com

@@ -1,0 +1,14 @@
+Return-Path: <alice@example.com>
+Received: from mail.example.com (mail.example.com [192.0.2.10])
+    by mx.example.org with ESMTPS id xyz456;
+    Wed, 14 May 2026 09:12:00 -0700
+Date: Wed, 14 May 2026 09:11:58 -0700
+From: alice@example.com
+To: bob@example.org
+Subject: lunch?
+Message-ID: <20260514-clean@example.com>
+Content-Type: text/plain; charset=utf-8
+
+want to grab lunch at noon? new ramen place opened on Walnut.
+
+— alice
