@@ -2,10 +2,10 @@
 
 ## What
 
-Carriers operate two parallel bridges. The SMS gateway (`@txt.att.net`,
-`@vtext.com` in the old days) accepts short text only. The MMS gateway
-(`@mms.att.net`, `@vzwpix.com`) accepts longer text, subject lines, and
-binary attachments — images, audio, sometimes PDFs.
+Carriers operate two parallel bridges. The SMS gateway (`@vtext.com`,
+`@txt.att.net` historically) accepts short text only. The MMS gateway
+(`@vzwpix.com`, `@mms.att.net` historically) accepts longer text, subject
+lines, and binary attachments — images, audio, sometimes PDFs.
 
 ## Why operators care about the difference
 
@@ -15,12 +15,14 @@ binary attachments — images, audio, sometimes PDFs.
 | Subject line behavior         | Often discarded          | Often surfaced to user   |
 | Attachments                   | Dropped                  | Delivered as MMS payload |
 | Filtering                     | Stricter                 | Looser historically       |
-| Survival through Verizon kill | Dead                     | Alive (`vzwpix.com`)     |
+| 2026 status                   | `vtext.com` alive (Proofpoint) | `vzwpix.com` alive (Proofpoint) |
 
-After Verizon killed the SMS gateway in 2022, **the MMS gateway is the
-only remaining email-to-carrier bridge for Verizon subscribers**. This
-matters because Verizon is the largest US carrier — operators
-specifically targeting Verizon lines now must use `vzwpix.com`.
+Contrary to the widely-repeated "Verizon killed the SMS gateway in 2022"
+claim, `vtext.com` is still live in 2026, behind Proofpoint Cloudmark — see
+[`carrier_gateway_study.md`](../carrier_gateway_study.md#7-why-the-vector-is-dying-and-where-it-isnt).
+Both Verizon bridges survive, so the SMS-vs-MMS choice is about
+**capability, not survival**: reach for `vzwpix.com` when you want a subject
+line, an image, or more than 160 characters.
 
 ## Attack-relevant difference: subject line
 

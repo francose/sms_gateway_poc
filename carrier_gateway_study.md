@@ -349,8 +349,9 @@ For an individual:
 
 1. Why did the bridges exist in the first place? What was the original
    threat model and where did it break?
-2. Why did Verizon choose to kill `vtext.com` rather than tighten filters
-   like AT&T did?
+2. Why did AT&T retire its gateway outright while Verizon kept `vtext.com`
+   alive behind Proofpoint filtering? What does each approach cost the
+   carrier operationally?
 3. If a target has a ported number (formerly Verizon, now T-Mobile),
    which gateway domain works? Why?
 4. SPF passes on a typosquat domain — does that guarantee delivery

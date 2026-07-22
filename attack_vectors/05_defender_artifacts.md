@@ -98,7 +98,8 @@ Carrier-side defenses available to the gateway operator:
 - DMARC enforcement on inbound to the gateway. (AT&T, Google Fi do.)
 - Rate limiting per source IP, per From: domain, per RCPT TO: domain.
 - Reputation feeds (Spamhaus, Spamcop, Talos) consulted at HELO time.
-- Killing the bridge entirely. (Verizon 2022.)
+- Killing the bridge entirely. (AT&T did this by 2026 — zero MX published.
+  Verizon did not: `vtext.com` is still live behind Proofpoint.)
 
 There's no public API for end users or defenders to report gateway
 abuse directly. Reports route through carrier customer service or

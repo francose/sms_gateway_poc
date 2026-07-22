@@ -10,8 +10,9 @@ mobile carrier. Address format: `<10-digit>@<gateway-domain>`.
 1. **DNS only**: `dig MX tmomail.net`. If MX resolves and accepts mail on
    port 25, the bridge is alive. Confirms presence, not deliverability.
 2. **Public lists**: every carrier has historically documented the domain
-   in support pages. Lists rot — Verizon's `vtext.com` is still in many
-   third-party tables despite being shut down since 2022. See
+   in support pages. Lists rot — many third-party tables still show
+   `txt.att.net` as live (dead as of 2026) and repeat the "vtext.com shut
+   down in 2022" line (it didn't — see below). See
    `tools/gateway_domains.py` for the current verified set.
 3. **Test send**: send to your own number on each candidate gateway. The
    one that reaches your handset is the live mapping for your carrier.

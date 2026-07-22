@@ -10,12 +10,12 @@ rendering rule differs per carrier. This is the spoof surface.
 
 | Carrier        | What the handset shows                                   | Spoof difficulty |
 |----------------|----------------------------------------------------------|------------------|
-| AT&T           | Display name + local-part of From:, e.g. `support`       | Easy if DMARC-aligned domain owned |
+| AT&T (retired 2026) | Display name + local-part of From:, e.g. `support` (historical) | Was easy on a DMARC-aligned owned domain; gateway now dead |
 | T-Mobile       | Full From: address, truncated                            | Hard to impersonate identity, easy to make look like an alert |
 | Google Fi      | Full From: address                                       | Very hard, strict SPF/DKIM |
 | US Cellular    | Local-part only                                          | Easy, weak filtering |
 
-## The classic flow (AT&T)
+## The classic flow (AT&T, historical — gateway retired 2026)
 
 1. Register a typosquat domain: `bank0famerica.com`, `secure-chase.net`,
    `it-helpdesk.<companyname>.co`.
